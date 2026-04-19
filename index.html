@@ -287,17 +287,23 @@
             box-shadow: 0 40px 80px rgba(0,0,0,0.6);
             border-radius: 12px;
             overflow: hidden;
+            position: relative; /* 겹치기를 위해 상대 위치 지정 */
         }
 
         canvas {
-            display: none; /* 캔버스는 숨기고, img 태그로 결과물을 보여줍니다. */
+            display: block;
+            width: 100%;
+            height: auto !important;
         }
         
         #resultImage {
-            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: auto;
-            border-radius: 12px;
+            height: 100%;
+            opacity: 0.001; /* 거의 투명하게 처리하여 시각적으론 캔버스가 보이고, 터치는 얘가 받음 */
+            z-index: 10;
             pointer-events: auto; /* 터치 이벤트 활성화 */
             -webkit-touch-callout: default; /* 아이폰 꾹 누르기 메뉴 활성화 */
         }
@@ -336,7 +342,7 @@
                     <div class="control-label">가로 그리드 (Columns)</div>
                     <div class="stepper-control">
                         <button type="button" class="stepper-btn" onclick="updateVal('cols', -1)">-</button>
-                        <input type="number" id="cols" min="1" max="25" value="3" readonly>
+                        <input type="number" id="cols" min="1" max="25" value="3">
                         <button type="button" class="stepper-btn" onclick="updateVal('cols', 1)">+</button>
                     </div>
                 </div>
@@ -345,7 +351,7 @@
                     <div class="control-label">세로 그리드 (Rows)</div>
                     <div class="stepper-control">
                         <button type="button" class="stepper-btn" onclick="updateVal('rows', -1)">-</button>
-                        <input type="number" id="rows" min="1" max="25" value="3" readonly>
+                        <input type="number" id="rows" min="1" max="25" value="3">
                         <button type="button" class="stepper-btn" onclick="updateVal('rows', 1)">+</button>
                     </div>
                 </div>
@@ -354,7 +360,7 @@
                     <div class="control-label">선 두께 (Thickness, px)</div>
                     <div class="stepper-control">
                         <button type="button" class="stepper-btn" onclick="updateVal('thickness', -1)">-</button>
-                        <input type="number" id="thickness" min="1" max="15" value="2" readonly>
+                        <input type="number" id="thickness" min="1" max="15" value="2">
                         <button type="button" class="stepper-btn" onclick="updateVal('thickness', 1)">+</button>
                     </div>
                 </div>
@@ -412,18 +418,36 @@
         // UI 값 변경 헬퍼 함수
         window.updateVal = function(id, delta) {
             const el = document.getElementById(id);
-            let val = parseInt(el.value) + delta;
+            let val = parseInt(el.value) || 0;
+            val += delta;
+            
             const min = parseInt(el.min);
             const max = parseInt(el.max);
             
             if (val < min) val = min;
             if (val > max) val = max;
             
-            if (parseInt(el.value) !== val) {
+            if (parseInt(el.value || 0) !== val) {
                 el.value = val;
                 draw();
             }
         };
+
+        // 직접 숫자 입력 허용을 위한 이벤트 리스너 추가
+        [colsInput, rowsInput, thickInput].forEach(input => {
+            input.addEventListener('change', () => {
+                let val = parseInt(input.value);
+                if (isNaN(val)) val = parseInt(input.min);
+                if (val < parseInt(input.min)) val = parseInt(input.min);
+                if (val > parseInt(input.max)) val = parseInt(input.max);
+                input.value = val;
+                draw();
+            });
+            input.addEventListener('input', () => {
+                // 입력 중에도 실시간으로 빠르게 그리도록 (단, 빈칸은 무시)
+                if(input.value !== '') draw();
+            });
+        });
 
         // Init UI
         uploadBtn.addEventListener('click', () => fileInput.click());
@@ -510,30 +534,47 @@
                 ctx.stroke();
             }
 
-            updateDownloadLink();
+            // 고화질 PNG 인코딩은 느리기 때문에 지연 처리(Debounce)
+            scheduleDownloadLinkUpdate();
+        }
+
+        let downloadDebounceTimer = null;
+
+        function scheduleDownloadLinkUpdate() {
+            // 버튼 비활성화 시각화
+            downloadBtn.classList.add('disabled');
+            downloadBtn.querySelector('span').textContent = '⏳';
+            
+            if (downloadDebounceTimer) {
+                clearTimeout(downloadDebounceTimer);
+            }
+            
+            // 사용자의 폭풍 클릭이 끝나고 300ms 뒤에 한 번만 실행
+            downloadDebounceTimer = setTimeout(() => {
+                updateDownloadLink();
+            }, 300);
         }
 
         function updateDownloadLink() {
             try {
+                // 이 작업이 약 0.1~0.5초(이미지 크기에 따라) 걸림.
                 const dataUrl = canvas.toDataURL('image/png');
                 
-                // 1. 데스크톱용 다운로드 링크 업데이트
                 downloadBtn.href = dataUrl;
                 downloadBtn.setAttribute('download', 'grid_guide_result.png');
                 
-                // 2. 모바일(아이폰/안드로이드) 꾹 누르기(Long Press) 저장 대응
-                // -> Canvas는 꾹 눌러서 저장이 안 되므로 완전한 <img> 태그로 변환하여 화면에 출력
                 resultImage.src = dataUrl;
-                resultImage.style.display = 'block';
+                
+                // 준비 완료 UI 복구
+                downloadBtn.classList.remove('disabled');
+                downloadBtn.querySelector('span').textContent = '💾';
             } catch (err) {
                 console.error("Link update failed", err);
             }
         }
 
-        // Control events
-        [colsInput, rowsInput, thickInput, colorInput].forEach(input => {
-            input.addEventListener('input', draw);
-        });
+        // Color Control events
+        colorInput.addEventListener('input', draw);
 
         // Click download handling (redundant but for safety)
         downloadBtn.addEventListener('click', (e) => {
