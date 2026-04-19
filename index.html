@@ -66,19 +66,24 @@
 
         .main-layout {
             display: grid;
-            grid-template-columns: 380px 1fr;
+            grid-template-columns: 1fr; /* 이미지가 없을 때는 100% 꽉 차게 */
             gap: 3rem;
             align-items: start;
+            transition: all 0.3s ease;
+        }
+
+        .main-layout.has-image {
+            grid-template-columns: 420px 1fr; /* 이미지가 있으면 사이드바 등장, 기존보타 조금 더 넓게 */
         }
 
         @media (max-width: 1100px) {
-            .main-layout {
+            .main-layout.has-image {
                 display: flex;
                 flex-direction: column-reverse; /* 모바일에서는 이미지를 위에, 컨트롤을 아래에 배치 */
                 gap: 2rem;
             }
             .controls-panel {
-                position: static;
+                position: static !important;
                 padding: 1.5rem;
                 gap: 1.5rem;
             }
@@ -99,18 +104,22 @@
 
         /* Controls Panel */
         .controls-panel {
+            display: none; /* 초기에는 숨김 */
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 32px;
             padding: 2.5rem;
-            display: flex;
             flex-direction: column;
-            gap: 2rem;
+            gap: 2.5rem;
             position: sticky;
             top: 2rem;
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .main-layout.has-image .controls-panel {
+            display: flex; /* 이미지가 삽입되면 표시 */
         }
 
         .control-group {
@@ -122,55 +131,73 @@
         .control-label {
             display: flex;
             justify-content: space-between;
-            font-size: 0.95rem;
+            font-size: 1.1rem; /* 터치 및 가독성 향상 */
             color: var(--text-secondary);
             font-weight: 500;
+            margin-bottom: 0.3rem;
         }
 
-        .control-label span {
-            color: var(--accent-color);
-            font-weight: 600;
+        /* Stepper Control (슬라이더 대신 숫자 입력 + 버튼) */
+        .stepper-control {
+            display: flex;
+            align-items: center;
+            background: #1a1a1a;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            height: 60px; /* 큼직하게 */
         }
 
-        input[type="range"] {
-            width: 100%;
-            height: 12px; /* 모바일 터치 편의성을 위해 약간 두껍게 */
-            background: #333;
-            border-radius: 6px;
-            outline: none;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: var(--accent-color);
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(124, 77, 255, 0.5);
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: var(--accent-color);
-            cursor: pointer;
+        .stepper-btn {
+            background: rgba(255, 255, 255, 0.03);
             border: none;
-            box-shadow: 0 0 10px rgba(124, 77, 255, 0.5);
+            color: var(--text-primary);
+            font-size: 1.8rem;
+            width: 70px;
+            height: 100%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .stepper-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .stepper-btn:active {
+            background: var(--accent-color);
+        }
+
+        .stepper-control input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--accent-color);
+            font-size: 1.8rem;
+            font-weight: 600;
+            text-align: center;
+            width: 100%;
+            -moz-appearance: textfield;
+            outline: none;
+        }
+
+        .stepper-control input::-webkit-outer-spin-button,
+        .stepper-control input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         input[type="color"] {
             width: 100%;
-            height: 48px;
+            height: 60px; /* 큼직하게 */
             border: none;
-            border-radius: 12px;
-            background: #222;
+            border-radius: 16px;
+            background: #1a1a1a;
             cursor: pointer;
-            padding: 4px;
+            padding: 8px;
         }
 
         .btn-download {
@@ -306,24 +333,30 @@
         <main class="main-layout">
             <aside class="controls-panel">
                 <div class="control-group">
-                    <div class="control-label">
-                        가로 그리드 (Columns) <span id="colsVal">3</span>
+                    <div class="control-label">가로 그리드 (Columns)</div>
+                    <div class="stepper-control">
+                        <button type="button" class="stepper-btn" onclick="updateVal('cols', -1)">-</button>
+                        <input type="number" id="cols" min="1" max="25" value="3" readonly>
+                        <button type="button" class="stepper-btn" onclick="updateVal('cols', 1)">+</button>
                     </div>
-                    <input type="range" id="cols" min="1" max="25" value="3">
                 </div>
 
                 <div class="control-group">
-                    <div class="control-label">
-                        세로 그리드 (Rows) <span id="rowsVal">3</span>
+                    <div class="control-label">세로 그리드 (Rows)</div>
+                    <div class="stepper-control">
+                        <button type="button" class="stepper-btn" onclick="updateVal('rows', -1)">-</button>
+                        <input type="number" id="rows" min="1" max="25" value="3" readonly>
+                        <button type="button" class="stepper-btn" onclick="updateVal('rows', 1)">+</button>
                     </div>
-                    <input type="range" id="rows" min="1" max="25" value="3">
                 </div>
 
                 <div class="control-group">
-                    <div class="control-label">
-                        선 두께 (Thickness) <span id="thickVal">2px</span>
+                    <div class="control-label">선 두께 (Thickness, px)</div>
+                    <div class="stepper-control">
+                        <button type="button" class="stepper-btn" onclick="updateVal('thickness', -1)">-</button>
+                        <input type="number" id="thickness" min="1" max="15" value="2" readonly>
+                        <button type="button" class="stepper-btn" onclick="updateVal('thickness', 1)">+</button>
                     </div>
-                    <input type="range" id="thickness" min="1" max="15" value="2">
                 </div>
 
                 <div class="control-group">
@@ -372,12 +405,25 @@
         const thickInput = document.getElementById('thickness');
         const colorInput = document.getElementById('color');
 
-        // Labels
-        const colsVal = document.getElementById('colsVal');
-        const rowsVal = document.getElementById('rowsVal');
-        const thickVal = document.getElementById('thickVal');
+        // Labels 삭제 (이제 입력칸에서 직접 보여주므로 불필요)
 
         let originalImage = null;
+
+        // UI 값 변경 헬퍼 함수
+        window.updateVal = function(id, delta) {
+            const el = document.getElementById(id);
+            let val = parseInt(el.value) + delta;
+            const min = parseInt(el.min);
+            const max = parseInt(el.max);
+            
+            if (val < min) val = min;
+            if (val > max) val = max;
+            
+            if (parseInt(el.value) !== val) {
+                el.value = val;
+                draw();
+            }
+        };
 
         // Init UI
         uploadBtn.addEventListener('click', () => fileInput.click());
@@ -415,6 +461,7 @@
                 const img = new Image();
                 img.onload = () => {
                     originalImage = img;
+                    document.querySelector('.main-layout').classList.add('has-image'); // 레이아웃 변경 (컨트롤 패널 등장)
                     uploadBtn.style.display = 'none';
                     canvasContainer.style.display = 'block';
                     downloadBtn.classList.remove('disabled');
@@ -434,9 +481,7 @@
             const thickness = parseInt(thickInput.value);
             const color = colorInput.value;
 
-            colsVal.textContent = cols;
-            rowsVal.textContent = rows;
-            thickVal.textContent = thickness + 'px';
+            // 라벨 업데이트 제거 (직접 input value에 의존함)
 
             canvas.width = originalImage.width;
             canvas.height = originalImage.height;
