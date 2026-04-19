@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picture Grid Guide - 프리미엄 이미지 그리드 도구</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --surface-color: #121212;
+            --accent-color: #7c4dff;
+            --accent-gradient: linear-gradient(135deg, #7c4dff 0%, #3f51b5 100%);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(20, 20, 20, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        header h1 {
+            font-size: 3.5rem;
+            font-weight: 600;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            letter-spacing: -0.03em;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 3rem;
+            align-items: start;
+        }
+
+        @media (max-width: 1100px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            position: sticky;
+            top: 2rem;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .control-label span {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #222;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            accent-color: var(--accent-color);
+        }
+
+        input[type="color"] {
+            width: 100%;
+            height: 48px;
+            border: none;
+            border-radius: 12px;
+            background: #222;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .btn-download {
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 1.2rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.8rem;
+            margin-top: 1rem;
+            text-decoration: none;
+        }
+
+        .btn-download:hover:not(.disabled) {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px rgba(124, 77, 255, 0.4);
+        }
+
+        .btn-download.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
+        /* Preview Area */
+        .preview-area {
+            background: #080808;
+            border-radius: 32px;
+            border: 2px dashed var(--border-color);
+            min-height: 700px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+            transition: border-color 0.3s ease;
+        }
+
+        .preview-area.drag-over {
+            border-color: var(--accent-color);
+            background: rgba(124, 77, 255, 0.05);
+        }
+
+        .upload-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .upload-placeholder:hover {
+            transform: scale(1.05);
+        }
+
+        .upload-icon {
+            width: 100px;
+            height: 100px;
+            background: var(--accent-gradient);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            box-shadow: 0 0 30px rgba(124, 77, 255, 0.5);
+        }
+
+        .upload-placeholder p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+
+        .canvas-container {
+            max-width: 100%;
+            max-height: 85vh;
+            display: none;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto !important;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* Fallback Info */
+        .fallback-info {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .fallback-info strong {
+            color: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Picture Grid Guide</h1>
+            <p>이미지에 정교한 가이드 라인을 그려보세요.</p>
+        </header>
+
+        <main class="main-layout">
+            <aside class="controls-panel">
+                <div class="control-group">
+                    <div class="control-label">
+                        가로 그리드 (Columns) <span id="colsVal">3</span>
+                    </div>
+                    <input type="range" id="cols" min="1" max="25" value="3">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        세로 그리드 (Rows) <span id="rowsVal">3</span>
+                    </div>
+                    <input type="range" id="rows" min="1" max="25" value="3">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        선 두께 (Thickness) <span id="thickVal">2px</span>
+                    </div>
+                    <input type="range" id="thickness" min="1" max="15" value="2">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">가이드 색상 (Color)</div>
+                    <input type="color" id="color" value="#ffffff">
+                </div>
+
+                <a href="#" id="downloadBtn" class="btn-download disabled">
+                    <span>💾</span> 이미지 다운로드
+                </a>
+                
+                <div id="fallbackInfo" class="fallback-info">
+                    자동 다운로드가 안되면 <strong>이미지를 우클릭</strong>하여 저장하세요.
+                </div>
+            </aside>
+
+            <section class="preview-area" id="dropZone">
+                <div class="upload-placeholder" id="uploadBtn">
+                    <div class="upload-icon">+</div>
+                    <p>이미지를 클릭하거나 이곳에 드래그하세요</p>
+                </div>
+                
+                <div class="canvas-container" id="canvasContainer">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+                <input type="file" id="fileInput" accept="image/*">
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const dropZone = document.getElementById('dropZone');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const fallbackInfo = document.getElementById('fallbackInfo');
+
+        // Inputs
+        const colsInput = document.getElementById('cols');
+        const rowsInput = document.getElementById('rows');
+        const thickInput = document.getElementById('thickness');
+        const colorInput = document.getElementById('color');
+
+        // Labels
+        const colsVal = document.getElementById('colsVal');
+        const rowsVal = document.getElementById('rowsVal');
+        const thickVal = document.getElementById('thickVal');
+
+        let originalImage = null;
+
+        // Init UI
+        uploadBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', handleFile);
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            loadImage(file);
+        }
+
+        // Drag & Drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImage(file);
+            }
+        });
+
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    originalImage = img;
+                    uploadBtn.style.display = 'none';
+                    canvasContainer.style.display = 'block';
+                    downloadBtn.classList.remove('disabled');
+                    fallbackInfo.style.display = 'block';
+                    draw();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function draw() {
+            if (!originalImage) return;
+
+            const cols = parseInt(colsInput.value);
+            const rows = parseInt(rowsInput.value);
+            const thickness = parseInt(thickInput.value);
+            const color = colorInput.value;
+
+            colsVal.textContent = cols;
+            rowsVal.textContent = rows;
+            thickVal.textContent = thickness + 'px';
+
+            canvas.width = originalImage.width;
+            canvas.height = originalImage.height;
+
+            ctx.drawImage(originalImage, 0, 0);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = thickness;
+            ctx.lineCap = 'round';
+
+            // Vertical
+            for (let i = 1; i < cols; i++) {
+                const x = (canvas.width / cols) * i;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+
+            // Horizontal
+            for (let i = 1; i < rows; i++) {
+                const y = (canvas.height / rows) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            updateDownloadLink();
+        }
+
+        function updateDownloadLink() {
+            try {
+                // 다운로드 링크를 미리 생성하여 <a> 태그의 href에 할당
+                // 이 방식은 '우클릭 저장' 시에도 결과물을 보장합니다.
+                const dataUrl = canvas.toDataURL('image/png');
+                downloadBtn.href = dataUrl;
+                downloadBtn.setAttribute('download', 'grid_guide_result.png');
+            } catch (err) {
+                console.error("Link update failed", err);
+            }
+        }
+
+        // Control events
+        [colsInput, rowsInput, thickInput, colorInput].forEach(input => {
+            input.addEventListener('input', draw);
+        });
+
+        // Click download handling (redundant but for safety)
+        downloadBtn.addEventListener('click', (e) => {
+            if (downloadBtn.classList.contains('disabled')) {
+                e.preventDefault();
+                return;
+            }
+            // 브라우저가 href의 download 속성을 무시할 경우를 대비해 
+            // 강제로 클릭 이벤트를 한번 더 핸들링할 수도 있지만, 
+            // 현재는 updateDownloadLink에서 이미 href를 맞춰두었으므로 기본 동작을 따릅니다.
+        });
+    </script>
+</body>
+</html>
