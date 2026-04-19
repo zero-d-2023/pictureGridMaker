@@ -73,7 +73,27 @@
 
         @media (max-width: 1100px) {
             .main-layout {
-                grid-template-columns: 1fr;
+                display: flex;
+                flex-direction: column-reverse; /* 모바일에서는 이미지를 위에, 컨트롤을 아래에 배치 */
+                gap: 2rem;
+            }
+            .controls-panel {
+                position: static;
+                padding: 1.5rem;
+                gap: 1.5rem;
+            }
+            header {
+                margin-bottom: 2rem;
+            }
+            header h1 {
+                font-size: 2.2rem;
+            }
+            .container {
+                padding: 1.5rem 1rem;
+            }
+            .btn-download {
+                padding: 1rem;
+                font-size: 1.05rem;
             }
         }
 
@@ -114,12 +134,33 @@
 
         input[type="range"] {
             width: 100%;
-            height: 6px;
-            background: #222;
-            border-radius: 3px;
+            height: 12px; /* 모바일 터치 편의성을 위해 약간 두껍게 */
+            background: #333;
+            border-radius: 6px;
             outline: none;
             -webkit-appearance: none;
-            accent-color: var(--accent-color);
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(124, 77, 255, 0.5);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(124, 77, 255, 0.5);
         }
 
         input[type="color"] {
@@ -222,9 +263,16 @@
         }
 
         canvas {
-            display: block;
-            max-width: 100%;
-            height: auto !important;
+            display: none; /* 캔버스는 숨기고, img 태그로 결과물을 보여줍니다. */
+        }
+        
+        #resultImage {
+            display: none;
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            pointer-events: auto; /* 터치 이벤트 활성화 */
+            -webkit-touch-callout: default; /* 아이폰 꾹 누르기 메뉴 활성화 */
         }
 
         #fileInput {
@@ -288,7 +336,7 @@
                 </a>
                 
                 <div id="fallbackInfo" class="fallback-info">
-                    자동 다운로드가 안되면 <strong>이미지를 우클릭</strong>하여 저장하세요.
+                    스마트폰에서는 <strong>사진을 꾹 눌러서</strong> 갤러리에 저장하세요!
                 </div>
             </aside>
 
@@ -299,6 +347,7 @@
                 </div>
                 
                 <div class="canvas-container" id="canvasContainer">
+                    <img id="resultImage" alt="최종 그리드 이미지">
                     <canvas id="mainCanvas"></canvas>
                 </div>
                 <input type="file" id="fileInput" accept="image/*">
@@ -311,6 +360,7 @@
         const uploadBtn = document.getElementById('uploadBtn');
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
+        const resultImage = document.getElementById('resultImage');
         const downloadBtn = document.getElementById('downloadBtn');
         const dropZone = document.getElementById('dropZone');
         const canvasContainer = document.getElementById('canvasContainer');
@@ -420,11 +470,16 @@
 
         function updateDownloadLink() {
             try {
-                // 다운로드 링크를 미리 생성하여 <a> 태그의 href에 할당
-                // 이 방식은 '우클릭 저장' 시에도 결과물을 보장합니다.
                 const dataUrl = canvas.toDataURL('image/png');
+                
+                // 1. 데스크톱용 다운로드 링크 업데이트
                 downloadBtn.href = dataUrl;
                 downloadBtn.setAttribute('download', 'grid_guide_result.png');
+                
+                // 2. 모바일(아이폰/안드로이드) 꾹 누르기(Long Press) 저장 대응
+                // -> Canvas는 꾹 눌러서 저장이 안 되므로 완전한 <img> 태그로 변환하여 화면에 출력
+                resultImage.src = dataUrl;
+                resultImage.style.display = 'block';
             } catch (err) {
                 console.error("Link update failed", err);
             }
